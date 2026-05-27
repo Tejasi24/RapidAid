@@ -1,0 +1,186 @@
+<%- include('../partials/header') %>
+
+<div style="margin-bottom: 20px; text-align: center;">
+    <h2 style="font-size: 28px; color: var(--dark-blue); font-weight: 800;">Report Emergency</h2>
+    <p style="color: var(--text-muted);">Please provide incident details carefully</p>
+</div>
+
+<div class="modern-form-card">
+    <form action="/user/report" method="POST" id="reportForm">
+        <input type="hidden" name="lat" id="lat" required>
+        <input type="hidden" name="lng" id="lng" required>
+        <input type="hidden" name="injuredCount" id="injuredCount" value="1" required>
+
+        <div class="floating-input">
+            <input type="text" id="patientName" name="patientName" placeholder=" " required>
+            <label for="patientName">Patient / Incident Name</label>
+        </div>
+
+        <div class="floating-input">
+            <input type="tel" id="phone" name="phone" placeholder=" " required>
+            <label for="phone">Contact Phone Number</label>
+        </div>
+
+        <div style="margin-bottom: 5px;">
+            <label style="font-size: 13px; font-weight: 700; color: #4B5563;">Number of Injured</label>
+            <div class="modern-injured-selector" style="margin-bottom: 8px;">
+                <button type="button" class="injured-btn selected" data-val="1">1</button>
+                <button type="button" class="injured-btn" data-val="2">2</button>
+            </div>
+            <div style="font-size: 12.5px; color: #EF4444; font-weight: 600; margin-top: 6px; margin-bottom: 20px; display: flex; align-items: center; gap: 6px; line-height: 1.4;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                For more number of patients, please book more ambulances.
+            </div>
+        </div>
+        
+        <div class="location-card">
+            <button type="button" id="detectLocBtn" class="btn-detect-loc">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span id="locBtnText">Detect Current Location</span>
+            </button>
+            <div id="locationStatus" style="font-size: 13px; margin-top: 10px; color: #9CA3AF; font-weight: 500;">
+                Location is required to dispatch an ambulance.
+            </div>
+            <div id="miniMap" class="map-preview-container"></div>
+        </div>
+
+        <button type="submit" class="btn-gradient" id="submitBtn" disabled>
+            <svg class="spinner" id="submitSpinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+            <span id="submitBtnText">Submit Emergency</span>
+        </button>
+        
+        <a href="/user/dashboard" class="btn-text-cancel">Cancel</a>
+    </form>
+</div>
+
+<!-- Toast Notification -->
+<div id="successToast" class="toast-notification">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    Emergency request sent successfully
+</div>
+
+<script>
+    // Handle injured count buttons
+    const buttons = document.querySelectorAll('.injured-btn');
+    const hiddenInput = document.getElementById('injuredCount');
+    
+    buttons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            buttons.forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            hiddenInput.value = this.getAttribute('data-val');
+        });
+    });
+
+    // Geolocation and Leaflet map
+    const latInput = document.getElementById('lat');
+    const lngInput = document.getElementById('lng');
+    const statusDiv = document.getElementById('locationStatus');
+    const submitBtn = document.getElementById('submitBtn');
+    const detectLocBtn = document.getElementById('detectLocBtn');
+    const locBtnText = document.getElementById('locBtnText');
+    const miniMapDiv = document.getElementById('miniMap');
+    let mapInstance = null;
+
+    detectLocBtn.addEventListener('click', function() {
+        if ("geolocation" in navigator) {
+            statusDiv.innerText = "Getting your location... Please wait.";
+            statusDiv.style.color = "#4B5563";
+            locBtnText.innerText = "Detecting...";
+            detectLocBtn.disabled = true;
+
+            const geoOptions = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    latInput.value = lat;
+                    lngInput.value = lng;
+                    
+                    statusDiv.style.color = "#10B981"; // Success Green
+                    statusDiv.innerText = "Location detected successfully";
+                    
+                    locBtnText.innerText = "Location Detected";
+                    detectLocBtn.style.backgroundColor = "#E6F4EA"; // Light green
+                    detectLocBtn.style.color = "#10B981";
+                    
+                    // Show map container
+                    miniMapDiv.style.display = "block";
+                    
+                    // Initialize or update map
+                    if (!mapInstance) {
+                        mapInstance = L.map('miniMap', {
+                            zoomControl: false,
+                            dragging: false,
+                            scrollWheelZoom: false
+                        }).setView([lat, lng], 15);
+                        
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap'
+                        }).addTo(mapInstance);
+                        
+                        L.marker([lat, lng]).addTo(mapInstance);
+                    } else {
+                        mapInstance.setView([lat, lng], 15);
+                        if (mapInstance.markerInstance) {
+                            mapInstance.markerInstance.setLatLng([lat, lng]);
+                        } else {
+                            mapInstance.markerInstance = L.marker([lat, lng]).addTo(mapInstance);
+                        }
+                    }
+
+                    submitBtn.disabled = false;
+                },
+                function(error) {
+                    let errorMsg = "Error getting location. Please enable location permissions.";
+                    if (error.code === 1) errorMsg = "Permission denied. Please allow location access.";
+                    else if (error.code === 3) errorMsg = "Location detection timed out. Please try again.";
+                    
+                    statusDiv.style.color = "#EF4444"; // Error Red
+                    statusDiv.innerText = errorMsg;
+                    locBtnText.innerText = "Try Detecting Location Again";
+                    detectLocBtn.disabled = false;
+                    submitBtn.disabled = true;
+                },
+                geoOptions
+            );
+        } else {
+            statusDiv.style.color = "#EF4444";
+            statusDiv.innerText = "Geolocation is not supported by your browser.";
+        }
+    });
+
+    // Form submission simulation & Toast
+    const reportForm = document.getElementById('reportForm');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const successToast = document.getElementById('successToast');
+
+    reportForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Intercept actual submit
+        
+        // UI Loading state
+        submitBtn.disabled = true;
+        submitSpinner.style.display = 'block';
+        submitBtnText.innerText = 'Sending...';
+
+        // Simulate network delay for effect
+        setTimeout(() => {
+            // Show toast
+            successToast.classList.add('show');
+            
+            // Actually submit the form after letting user see the success
+            setTimeout(() => {
+                reportForm.submit();
+            }, 1000);
+        }, 1200);
+    });
+</script>
+
+<%- include('../partials/footer') %>

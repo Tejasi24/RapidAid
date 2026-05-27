@@ -1,0 +1,55 @@
+<%- include('partials/header') %>
+
+<% const isUser = role === 'user'; %>
+<div class="login-wrapper">
+    <div class="auth-box <%= isUser ? 'auth-user' : 'auth-partner' %>">
+        <div class="auth-icon-wrapper">
+            <% if (isUser) { %>
+                <div class="icon-inner user-icon-inner">
+                    <span class="logo-box-small">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                    </span>
+                </div>
+            <% } else { %>
+                <div class="icon-inner partner-icon-inner">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" ry="2"></rect><path d="M8 7h8"></path><path d="M12 7v8"></path><path d="M8 11h8"></path><path d="M8 15h8"></path></svg>
+                </div>
+            <% } %>
+        </div>
+
+        <h2><%= isUser ? 'Welcome Back' : 'Partner Login' %></h2>
+        <p class="auth-subtitle"><%= isUser ? 'Login to your RapidAid user account' : 'Access the ambulance command center' %></p>
+
+        <% if (error) { %>
+            <div class="error-msg"><%= error %></div>
+        <% } %>
+
+        <form action="/login" method="POST">
+            <input type="hidden" name="role" value="<%= role %>">
+            
+            <div class="form-group custom-input">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group custom-input">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit" class="btn auth-submit-btn <%= isUser ? 'btn-red-shadow' : 'btn-white' %>">
+                <%= isUser ? 'Login to Dashboard' : 'Access Dashboard' %>
+            </button>
+        </form>
+        
+        <div class="auth-footer">
+            <% if (isUser) { %>
+                <p>Don't have an account? <a href="/signup?role=user">Register here</a></p>
+            <% } else { %>
+                <p>Want to become a partner? <a href="/signup?role=ambulance">Register unit</a></p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

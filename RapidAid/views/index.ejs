@@ -1,0 +1,35 @@
+<%- include('partials/header') %>
+
+<div class="landing-hero">
+    <div class="hero-content">
+        <div class="badge-pill">
+            <span class="dot"></span> Emergency Response System
+        </div>
+        <h1>Seconds save<br><span class="highlight">lives.</span></h1>
+        <p>RapidAid connects accident reporters with the nearest available ambulance partners instantly, reducing response times when it matters most.</p>
+    </div>
+    
+    <div class="hero-cards">
+        <!-- User Card -->
+        <a href="/login?role=user" class="hero-card user-card">
+            <div class="card-icon-wrapper user-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </div>
+            <h2>I need help</h2>
+            <p>Report an accident or medical emergency and track the ambulance.</p>
+            <span class="card-link user-link">User Login &rarr;</span>
+        </a>
+
+        <!-- Ambulance Card -->
+        <a href="/login?role=ambulance" class="hero-card ambulance-card">
+            <div class="card-icon-wrapper amb-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" ry="2"></rect><path d="M8 7h8"></path><path d="M12 7v8"></path><path d="M8 11h8"></path><path d="M8 15h8"></path></svg>
+            </div>
+            <h2>I provide help</h2>
+            <p>Receive active emergency requests in your area and navigate to patients.</p>
+            <span class="card-link amb-link">Ambulance Login &rarr;</span>
+        </a>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

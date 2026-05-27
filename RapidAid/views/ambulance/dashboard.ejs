@@ -1,0 +1,243 @@
+<%- include('../partials/header') %>
+<script>
+    document.body.classList.add('provider-dark-theme');
+</script>
+<script>
+    // Refresh page every 10 seconds to get new incoming requests
+    setTimeout(function() {
+        location.reload();
+    }, 10000);
+</script>
+
+<div class="dashboard-header">
+    <h2 class="dashboard-title"><%= user.name %>'s Dashboard</h2>
+</div>
+
+<div id="locationWarning" class="alert-banner" style="display: none; background: rgba(230, 57, 70, 0.15); border: 1px solid #e63946; color: #fecaca; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-weight: 600; align-items: center; gap: 10px; margin-top: 10px;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #e63946; flex-shrink: 0;"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <span>Location permission is required to view nearby requests. Please enable location services in your browser settings.</span>
+</div>
+
+<% if (providerLocation) { %>
+    <div id="locationStatus" class="alert-banner" style="background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.4); color: #dcfce7; padding: 10px 16px; border-radius: 12px; margin-bottom: 25px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span>🟢 Filtering requests within 30km of your location: <strong><%= providerLocation.lat.toFixed(4) %>, <%= providerLocation.lng.toFixed(4) %></strong></span>
+        </div>
+        <button onclick="requestLocationUpdate(true)" style="background: transparent; border: 1px solid rgba(34, 197, 94, 0.4); color: #22c55e; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='rgba(34,197,94,0.1)'" onmouseout="this.style.background='transparent'">Update Location</button>
+    </div>
+<% } else { %>
+    <div id="locationStatus" class="alert-banner" style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.4); color: #dbeafe; padding: 12px 16px; border-radius: 12px; margin-bottom: 25px; font-weight: 600; display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+        <span class="spinner" style="border: 2px solid #3b82f6; border-top: 2px solid transparent; border-radius: 50%; width: 14px; height: 14px; display: inline-block; animation: spin 1s linear infinite; flex-shrink: 0;"></span>
+        <span id="locationStatusText">Detecting location to filter nearby requests...</span>
+    </div>
+<% } %>
+
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<h3 class="section-title">Incoming Nearby Requests</h3>
+
+<% if (incomingRequests.length === 0) { %>
+    <p style="margin-bottom: 40px;">No pending requests at the moment.</p>
+<% } else { %>
+    <div class="requests-grid">
+        <% incomingRequests.forEach(request => { %>
+            <div class="card status-pending">
+                <div class="card-header">
+                    <div class="card-title"><%= request.patientName %></div>
+                    <span class="badge pending">Pending</span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Phone:</strong> <%= request.phone %></p>
+                    <p><strong>Injured:</strong> <%= request.injuredCount %></p>
+                    <% if (typeof request.distance !== 'undefined') { %>
+                        <p><strong>Distance:</strong> <span style="color: #3b82f6; font-weight: 700;">📍 <%= request.distance.toFixed(1) %> km away</span></p>
+                    <% } %>
+                    <p><strong>Time:</strong> <%= new Date(request.createdAt).toLocaleTimeString() %></p>
+                </div>
+                <div class="card-actions">
+                    <form action="/ambulance/accept/<%= request._id %>" method="POST" style="flex: 1;">
+                        <button type="submit" class="btn-accept-glow" style="width: 100%;">Accept</button>
+                    </form>
+                    <form action="/ambulance/reject/<%= request._id %>" method="POST" style="flex: 1;">
+                        <button type="submit" class="btn-reject-outline" style="width: 100%;">Reject</button>
+                    </form>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+<% } %>
+
+<% 
+    const acceptedList = historyRequests.filter(r => r.status === 'accepted' || r.status === 'reached');
+    const completedList = historyRequests.filter(r => r.status === 'completed');
+%>
+
+<h3 class="section-title">Accepted Requests (Active)</h3>
+
+<% if (acceptedList.length === 0) { %>
+    <p style="margin-bottom: 40px; color: var(--text-muted);">No active accepted requests at the moment.</p>
+<% } else { %>
+    <div class="requests-grid">
+        <% acceptedList.forEach(request => { %>
+            <div class="card status-<%= request.status %>">
+                <div class="card-header">
+                    <div class="card-title"><%= request.patientName %></div>
+                    <span class="badge <%= request.status %>"><%= request.status %></span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Phone:</strong> <%= request.phone %></p>
+                    <p><strong>Injured:</strong> <%= request.injuredCount %></p>
+                    <p><strong>Time:</strong> <%= new Date(request.createdAt).toLocaleTimeString() %></p>
+                </div>
+                <div class="card-actions">
+                    <a href="/ambulance/tracking/<%= request._id %>" class="btn-nav-blue" style="width: 100%;">View Details / Track</a>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+<% } %>
+
+<h3 class="section-title">Completed Requests (History)</h3>
+
+<% if (completedList.length === 0) { %>
+    <p style="color: var(--text-muted);">No completed requests in history yet.</p>
+<% } else { %>
+    <div class="requests-grid">
+        <% completedList.forEach(request => { %>
+            <div class="card status-<%= request.status %>" style="opacity: 0.8;">
+                <div class="card-header">
+                    <div class="card-title"><%= request.patientName %></div>
+                    <span class="badge <%= request.status %>"><%= request.status %></span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Phone:</strong> <%= request.phone %></p>
+                    <p><strong>Injured:</strong> <%= request.injuredCount %></p>
+                    <% if (request.status === 'completed' && request.hospitalAdmitted) { %>
+                        <p><strong>Hospital:</strong> <span style="color: #22c55e;"><%= request.hospitalAdmitted %></span></p>
+                    <% } %>
+                    <p><strong>Date:</strong> <%= new Date(request.createdAt).toLocaleDateString() %></p>
+                </div>
+                <div class="card-actions">
+                    <a href="/ambulance/tracking/<%= request._id %>" class="btn-dark-outline" style="width: 100%; justify-content: center;">View Summary</a>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+<% } %>
+
+<%- include('../partials/footer') %>
+
+<script>
+    function getClientDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371e3; // meters
+        var rad = Math.PI / 180;
+        var dLat = (lat2 - lat1) * rad;
+        var dLon = (lon2 - lon1) * rad;
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function showLocationError(message) {
+        var statusEl = document.getElementById('locationStatus');
+        if (statusEl) statusEl.style.display = 'none';
+
+        var warningEl = document.getElementById('locationWarning');
+        if (warningEl) {
+            warningEl.querySelector('span').innerText = message;
+            warningEl.style.display = 'flex';
+        }
+        
+        var incomingSection = document.querySelector('.requests-grid');
+        if (incomingSection) {
+            incomingSection.style.opacity = '0.3';
+            incomingSection.style.pointerEvents = 'none';
+        }
+    }
+
+    function requestLocationUpdate(force) {
+        if (!navigator.geolocation) {
+            showLocationError("Geolocation is not supported by your browser.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+
+                // Geolocation succeeded! Hide the red warning banner and show the green status banner
+                var warningEl = document.getElementById('locationWarning');
+                if (warningEl) warningEl.style.display = 'none';
+
+                var statusEl = document.getElementById('locationStatus');
+                if (statusEl) statusEl.style.display = 'flex';
+
+                var incomingSection = document.querySelector('.requests-grid');
+                if (incomingSection) {
+                    incomingSection.style.opacity = '1';
+                    incomingSection.style.pointerEvents = 'auto';
+                }
+
+                var lastSent = sessionStorage.getItem('lastSentLocation');
+                if (lastSent && !force) {
+                    try {
+                        var parsed = JSON.parse(lastSent);
+                        var dist = getClientDistance(parsed.lat, parsed.lng, lat, lng);
+                        if (dist < 50) {
+                            console.log("Location unchanged (moved < 50m). Skipping update.");
+                            return;
+                        }
+                    } catch (e) {
+                        console.error("Error parsing cached location:", e);
+                    }
+                }
+
+                // POST request using AJAX
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/ambulance/update-location', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            if (data.success) {
+                                sessionStorage.setItem('lastSentLocation', JSON.stringify({ lat: lat, lng: lng }));
+                                if (data.reload) {
+                                    location.reload();
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error parsing update-location response:', e);
+                        }
+                    }
+                };
+                xhr.send(JSON.stringify({ lat: lat, lng: lng }));
+            },
+            function(error) {
+                console.error("Geolocation error:", error);
+                var msg = "Please enable location permission to view nearby emergency requests.";
+                if (error.code === error.PERMISSION_DENIED) {
+                    msg = "Location permission was denied. Please allow location access in your browser settings to see nearby incidents.";
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    msg = "Device location services are turned off or unavailable. Please turn on location services on your device.";
+                }
+                
+                // Show warning since location is turned off or denied
+                showLocationError(msg);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }
+
+    // Trigger on load
+    window.addEventListener('load', function() {
+        requestLocationUpdate(false);
+    });
+</script>

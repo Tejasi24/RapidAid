@@ -1,0 +1,87 @@
+<%- include('../partials/header') %>
+
+<script>
+    // Refresh page every 10 seconds to get status updates
+    setTimeout(function() {
+        location.reload();
+    }, 10000);
+</script>
+
+<div class="dashboard-header" style="border-bottom: none; margin-bottom: 20px; padding-bottom: 0;">
+    <h2 class="dashboard-title" style="font-weight: 800; font-size: 32px;">Request Details</h2>
+    <a href="/user/dashboard" class="btn-pill-outline">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Dashboard
+    </a>
+</div>
+
+<div class="card status-<%= emergencyRequest.status %>" style="max-width: 800px; margin: 0 auto 30px;">
+    <div class="card-header">
+        <div class="card-title"><%= emergencyRequest.patientName %></div>
+        <span class="badge <%= emergencyRequest.status %>" style="font-size: 16px; padding: 8px 15px;"><%= emergencyRequest.status %></span>
+    </div>
+    
+    <% if (emergencyRequest.status === 'accepted') { %>
+        <div style="background-color: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center;">
+            🚑 Ambulance is on the way!
+        </div>
+    <% } else if (emergencyRequest.status === 'reached') { %>
+        <div style="background-color: #f0fdf4; color: #15803d; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center; border: 1px solid #22c55e;">
+            ✅ Ambulance has arrived at your location!
+        </div>
+    <% } %>
+
+    <!-- Nova Assistant Premium Card -->
+    <div style="background: linear-gradient(135deg, #7f1d1d 0%, #1e0505 100%); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: space-between; gap: 15px; color: #ffffff; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -50px; right: -50px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(239,68,68,0.2) 0%, transparent 70%); pointer-events: none;"></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, #ef4444 0%, #7f1d1d 100%); display: flex; justify-content: center; align-items: center; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); position: relative; flex-shrink: 0;">
+                <span style="font-weight: 900; font-size: 11px; letter-spacing: 0.5px;">NOVA</span>
+                <div style="position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.4); animation: spinClockwise 12s linear infinite;"></div>
+            </div>
+            <div>
+                <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 16px; color: #fca5a5; letter-spacing: 0.5px;">NOVA Emergency Assistant</h4>
+                <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.4;">Scared, stressed or waiting? Let Nova stay with you, calm you down, and provide step-by-step first aid guidance until help arrives.</p>
+            </div>
+        </div>
+        <a href="/user/nova" style="background: #dc2626; color: #ffffff; padding: 10px 20px; border-radius: 30px; font-weight: 700; font-size: 13px; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); flex-shrink: 0;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(239,68,68,0.6)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(239, 68, 68, 0.4)';">
+            Talk to Nova
+        </a>
+    </div>
+    
+    <style>
+        @keyframes spinClockwise {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+
+    <div class="card-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+        <p><strong>Phone:</strong> <%= emergencyRequest.phone %></p>
+        <p><strong>Injured Count:</strong> <%= emergencyRequest.injuredCount %></p>
+        <p><strong>Date/Time:</strong> <%= new Date(emergencyRequest.createdAt).toLocaleString() %></p>
+        <p><strong>Status:</strong> <%= emergencyRequest.status.charAt(0).toUpperCase() + emergencyRequest.status.slice(1) %></p>
+    </div>
+
+    <div id="map" data-lat="<%= emergencyRequest.location.lat %>" data-lng="<%= emergencyRequest.location.lng %>"></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mapEl = document.getElementById('map');
+        const lat = parseFloat(mapEl.getAttribute('data-lat'));
+        const lng = parseFloat(mapEl.getAttribute('data-lng'));
+        
+        const map = L.map('map').setView([lat, lng], 15);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        const marker = L.marker([lat, lng]).addTo(map);
+        marker.bindPopup("<b>Accident Location</b><br>Help is requested here.").openPopup();
+    });
+</script>
+
+<%- include('../partials/footer') %>
